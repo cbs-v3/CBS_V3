@@ -2,6 +2,7 @@
 #define CBS_TARGET_H
 
 #include <string>
+#include <vector>
 #include "cbs_types.h"
 #include "cbs_buf.h"
 #include "cbs_device.h"
@@ -30,7 +31,7 @@ public:
 protected:
 	virtual RT_STATUS queue_cbuf(CDevice* p_dev, cbs_buf_t* p_cbuf);
 	virtual void queue_scan(CDevice* p_dev)=0;
-    virtual receive_data(cbs_buf_t *p_cbuf, uint8 *p_data, uint32 size);
+    virtual void receive_data(cbs_buf_t *p_cbuf, uint8 *p_data, uint32 size);
     virtual void cmd_done(cbs_buf_t* p_cbuf);
 public:
 	void target_receive_data(cbs_buf_t *p_cbuf, uint8 *p_data, uint32 size);
@@ -58,14 +59,18 @@ public:
 	
 private:
 	CTarget* G_targets[TARGET_CLASS_MAX]; //array of target class
+
 public:
-	void target_ClassInit(uint32 class_id, uint32 flags, const char* p_name, CTarget* p_target);
-	void get_target_by_class_id(uint32 class_id);
+	inline CTarget* get_target_by_class_id(uint32 class_id)
+    {
+         return G_targets[class_id];
+    }
+    void target_class_init(uint32 class_id, uint32 flags, const char* p_name, CTarget* p_target);
+    void init();
 };
 
 class CTargetUninit:public CTarget
 {
-
 protected:
     virtual void queue_scan(CDevice *p_dev);
     virtual void cmd_done(cbs_buf_t *p_cbuf);

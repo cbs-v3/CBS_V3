@@ -1,4 +1,5 @@
 #include "cbs_buf.h"
+#include "cbs_device.h"
 
 static CCBufPool g_cbuf_pool;
 cbs_buf_t* cbuf_alloc(uint32 priority)

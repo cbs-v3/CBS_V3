@@ -2,6 +2,7 @@
 #define CBS_DEVICE_H
 
 #include <string>
+#include <string.h>
 
 #include "cbs_types.h"
 #include "cbs_util.h"
@@ -9,7 +10,7 @@
 #include "cbs_scsi.h"
 #include "cbs_buf.h"
 
-#define CBS_MAX_INVALID_DEVICES 1
+#define CBS_MAX_UNINIT_DEVICES 1
 #define CBS_MAX_DISK_DEVICES    48
 #define CBS_MAX_NULL_DEVICES    1
 #define CBS_MAX_TSSD_DEVICES    CBS_MAX_DISK_DEVICES
@@ -17,13 +18,20 @@
 #define CBS_MAX_THREAD_DEVICES  8
 #define CBS_MAX_CONFIG_DEVICES  1
 
-#define CBS_MAX_DEVICES (CBS_MAX_INVALID_DEVICES + \
+#define CBS_MAX_DEVICES (CBS_MAX_UNINIT_DEVICES + \
                         CBS_MAX_DISK_DEVICES + \
                         CBS_MAX_NULL_DEVICES + \
                         CBS_MAX_TSSD_DEVICES + \
                         CBS_MAX_TFS_DEVICES + \
                         CBS_MAX_THREAD_DEVICES + \
                         CBS_MAX_CONFIG_DEVICES)
+
+#define CBS_DEVICE_FREE                 0x00000000
+#define CBS_DEVICE_STOP                 0x00000001
+#define CBS_DEVICE_GONE                 0x00000002
+#define CBS_DEVICE_ABORT                0x00000004
+#define CBS_DEVICE_ALLOCED              0x00000008
+#define CBS_DEVICE_CHECK                0x00000010
 
 class CDevice
 {
@@ -38,7 +46,7 @@ public:
         _index = device_no;
         _max_pending = max_pending;
         _state = CBS_DEVICE_FREE;
-        _name.assgin(name);
+        _name.assign(name);
 	}
 	virtual ~CDevice(){}
 	
@@ -73,13 +81,6 @@ public:
         return _index;
     }
 };
-
-#define CBS_DEVICE_FREE                 0x00000000
-#define CBS_DEVICE_STOP                 0x00000001
-#define CBS_DEVICE_GONE                 0x00000002
-#define CBS_DEVICE_ABORT                0x00000004
-#define CBS_DEVICE_ALLOCED              0x00000008
-#define CBS_DEVICE_CHECK                0x00000010
 
 class CDevicePool
 {

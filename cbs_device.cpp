@@ -11,7 +11,9 @@
 *    Copyright (C) 1998-2013 Tencent Inc. All Rights Reserved
 *******************************************************************/
 #include <time.h>
+
 #include "cbs_device.h"
+#include "cbs_target.h"
 
 static CDevicePool g_device_pool;
 
@@ -54,7 +56,7 @@ void CDevice::cmd_done(cbs_buf_t *p_cbuf)
 
 CDevicePool::CDevicePool() 
 {
-    _uninit_dev = new CDevice(TARGET_CLASS_UNINIT, 0, "Uninit Device");
+    _uninit_dev = new CDevice(TARGET_CLASS_UNINIT,  CBS_MAX_UNINIT_DEVICES, 0, "Uninit Device");
     for (int i = 0; i < CBS_MAX_DEVICES; i++)
     {
         G_devices[i] = _uninit_dev; //init all device as uninit.
@@ -64,8 +66,8 @@ CDevicePool::CDevicePool()
 CDevice* CDevicePool::_get_device_by_index(uint32 index)
 {
     //invalid device index;
-    index = (index >= CBS_MAX_DEVICES ? CBS_MAX_INVALID_DEVICES : index);
-    return &G_devices[index];
+    index = (index >= CBS_MAX_DEVICES ? CBS_MAX_UNINIT_DEVICES : index);
+    return G_devices[index];
 }
 
 RT_STATUS CDevicePool::_device_register(CDevice *p_dev)

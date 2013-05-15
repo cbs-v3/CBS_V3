@@ -183,7 +183,12 @@ RT_STATUS CTarget::queue_cbuf(CDevice *p_dev, cbs_buf_t *p_cbuf)
 
 void CTarget::cmd_done(cbs_buf_t *p_cbuf)
 {
-    LOG_DEBUG(CBS_DEBUG_LEVEL, CBS_DEBUG_TARGET, "cmd done in basic class, do nothing.");
+    LOG_DEBUG(CBS_DEBUG_LEVEL, CBS_DEBUG_TARGET, "cmd_done in basic class, do nothing.");
+}
+
+void CTarget::receive_data(cbs_buf_t *p_cbuf, uint8 *p_data, uint32 size)
+{
+    LOG_DEBUG(CBS_DEBUG_LEVEL, CBS_DEBUG_TARGET, "receive_data in basic class, do nothing");
 }
 
 void CTarget::target_cmd_done(cbs_buf_t *p_cbuf)
@@ -207,7 +212,7 @@ void CTarget::target_cmd_done(cbs_buf_t *p_cbuf)
     p_cbuf->target.generic.args[0] = 0;
 
     /* work on target sid finished, call init_IODone */
-    init_IODone(p_cbuf);
+ //   init_IODone(p_cbuf);
 
     return;
 }
@@ -241,7 +246,7 @@ void CTarget::target_reply_nodevice(cbs_buf_t *p_cbuf)
     p_cbuf->response = CBUF_RESP_NO_DEVICE;
 }
 
-void CTargetManager::target_ClassInit(uint32 class_id, uint32 flags, const char *p_name, CTarget *p_target)
+void CTargetManager::target_class_init(uint32 class_id, uint32 flags, const char *p_name, CTarget *p_target)
 {
     assert(class_id < TARGET_CLASS_MAX);
     assert(G_targets[class_id] == NULL);
@@ -255,21 +260,24 @@ void CTargetManager::target_ClassInit(uint32 class_id, uint32 flags, const char 
     return;
 }
 
-CTarget* CTargetManager::get_target_by_class_id(uint32 class_id)
+void CTargetManager::init()
 {
-    class_id = (class_id >= TARGET_CLASS_MAX ? TARGET_CLASS_INVALID : class_id);
-
-    return &G_targets[class_id];
+    CTargetUninit* p_target = new CTargetUninit;
+    assert(p_target == NULL);
+    target_class_init(TARGET_CLASS_UNINIT, 0, "TARGET_CLASS_UNINIT", p_target);
+    return;
 }
 
 void CTargetUninit::queue_scan(CDevice *p_dev)
 {
+    LOG_FATAL("device:[%u, %s] is uninit target class", p_dev->get_device_no(), p_dev->_name.c_str());
     assert(false);
     return;
 }
 
 void CTargetUninit::cmd_done(cbs_buf_t *p_cbuf)
 {
+    LOG_FATAL("cbuf queue on a device:%u that is uninit target class", p_cbuf->device_no);
     assert(false);
     return;
 }
