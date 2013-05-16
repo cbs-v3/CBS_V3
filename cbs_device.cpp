@@ -22,6 +22,8 @@ CDevice* get_device_by_index(uint32 index)
     return g_device_pool._get_device_by_index(index);
 }
 
+
+/*-----------------class device------------------*/
 void CDevice::cmd_done(cbs_buf_t *p_cbuf)
 {
     p_cbuf->done_time = time(NULL);

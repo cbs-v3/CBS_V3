@@ -80,6 +80,14 @@ public:
     {
         return _index;
     }
+    inline void add_timer(tm_timer_t* p_timer)
+    {
+        _q_timer.add_timer(p_timer);
+    }
+    inline void check_expire()
+    {
+        _q_timer.check_expire();
+    }
 };
 
 class CDevicePool

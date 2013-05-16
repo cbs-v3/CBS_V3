@@ -44,6 +44,13 @@ typedef uint32          RT_STATUS;
 #define HIU64(x) (uint32)(((uint64)(x) >> 32) & 0x00000000ffffffff)
 #define U64(hi,lo) (uint64)(((uint64)(hi) << 32 ) | (uint64)(lo))
 
+typedef union unique_id {   
+    uint32 longs[2];
+    uint16 words[4];
+    uint8 bytes[8];
+    uint64 dword[1];
+}unique_id_t;
+
 
 #endif
 

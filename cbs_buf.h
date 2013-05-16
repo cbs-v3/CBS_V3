@@ -161,6 +161,10 @@ typedef struct cbs_buf {
 #define CBUF_FLAG_SCAN_LATER	0x8000
 #define CBUF_FLAG_QUEUE_FIRST	0x4000
 
+#define CBUF_PRIORITY_HIGH   1
+#define CBUF_PRIORITY_NORMAL 0
+#define CBUF_PRIORITY_LOW 2
+
 #define CBUF_POOL_SIZE	1024
 class CCBufPool
 {
