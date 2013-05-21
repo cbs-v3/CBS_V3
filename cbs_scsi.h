@@ -320,5 +320,7 @@ typedef struct scsi_sense_info {
 
 #define SCSI_SENSE_LEN  18
 
+#define SCSI_UNSUPPORTED_INQUIRY_PAGE_LEN   0xffffffff
+
 
 #endif

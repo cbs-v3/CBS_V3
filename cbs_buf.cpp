@@ -26,6 +26,7 @@ cbs_buf_t* get_cbuf_by_handle(uint32 handle)
 void cbuf_done(cbs_buf_t *p_cbuf)
 {
     CDevice* p_dev = get_device_by_index(p_cbuf->device_no);
+    return;
 }
 
 void CCBufPool::init_cbuf(cbs_buf_t *p_cbuf)

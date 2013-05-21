@@ -218,4 +218,6 @@ extern cbs_buf_t* get_cbuf_by_handle(uint32 handle);
 #define GET_CBUF_SEQUENCE_BY_HANDLE(handle)\
 	(uint16)(handle&0x0000ffff)
 
+extern void cbuf_done(cbs_buf_t *p_cbuf);
+
 #endif

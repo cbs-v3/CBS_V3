@@ -51,6 +51,11 @@ typedef union unique_id {
     uint64 dword[1];
 }unique_id_t;
 
+#ifndef MAX
+#define MAX(a,b)  (((a) > (b)) ? (a) : (b))
+#define MIN(a,b)  (((a) < (b)) ? (a) : (b))
+#endif
+
 
 #endif
 

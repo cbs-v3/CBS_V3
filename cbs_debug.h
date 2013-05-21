@@ -45,5 +45,7 @@
     #define LOG_FATAL(fmt, arg...) printf(fmt", [%s, %d]\n", ##arg, __FILE__, __LINE__)
 #endif //MCP_DEBUG
 
+#define BUG_ON(bad_condition) do { if (bad_condition) LOG_ERROR("bug here"); } while(0)
+
 #endif
 

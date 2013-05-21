@@ -58,6 +58,130 @@ static sense_tuple_t sense_ctx_tbl[nb_sense_contexts] = {
     /** SENSE_CTX_INTERNAL_DEVICE_GONE    */{ KEY_ABORTED_COMMAND, ASC_RT_INTERNAL_DEVICE_GONE }
 };
 
+typedef struct scsi_inquiry_vpd_unit_serial {
+    uint8 type;
+    uint8 page;   /* 0x80 */
+    uint8 rsvd;    /* 0x0 */
+    uint8 length;  /* 0x8 */
+    uint8 serial[20];
+}scsi_inquiry_vpd_unit_serial_t;
+
+typedef struct scsi_inquiry_vpd_wwn {
+    uint8 type;
+    uint8 page;    /* 0x83 */
+    uint8 rsvd;    /* 0x00 */
+    uint8 length;  /* 0x0c */
+    uint8 code_set;
+    uint8 assoc_idtype;
+    uint8 reserved;
+    uint8 id_len; /* 0x08 */
+    uint8 id[8];
+}scsi_inquiry_vpd_wwn_t;
+
+typedef struct scsi_inquiry_firmware {
+    uint8 type;
+    uint8 page;    /* 0xC0 */
+    uint8 rsvd;    /* 0x00 */
+    uint8 length;  /* 0x08 */
+    uint8 release_num[8];
+}scsi_inquiry_firmware_t;
+
+typedef struct scsi_inquiry_info {
+    uint8 type;                     //0
+    uint8 modifier;                 //1
+    uint8 version;                  //2
+    uint8 rdf;                      //3
+    uint8 length;                   //4
+    uint8 rsvd;                     //5
+    uint8 port_info;                //6
+    uint8 bits;                     //7
+    uint8 vendor_id[8];             //8
+    uint8 prod_id[16];              //16
+    uint8 rev_id[4];                //32
+    uint8 serial[20];               //36
+    uint8 clocking;                 //56
+    uint8 rsvd1;                    //57
+    uint8 version_descs[16];        //58
+    uint8 resvd2[21];               //74
+    uint8 vendor_spec[4];           //95
+    uint8 resvd3;                   // 99
+}scsi_inquiry_info_t;
+
+typedef struct scsi_inquiry_vpd_list {
+    uint8 type;
+    uint8 page;   /* 0x80 */
+    uint8 rsvd;    /* 0x0 */
+    uint8 length;  /* 0x8 */
+    uint8 supported_pages[16];
+} scsi_inquiry_vpd_list_t;
+
+static CTargetPool g_target_pool;
+
+CTarget* get_target_by_class_id(uint32 class_id)
+{
+    return g_target_pool.get_target_by_class_id(class_id);
+}
+
+CTarget* get_target_by_device_no(uint32 device_no)
+{
+    CDevice *p_dev = get_device_by_index(device_no);
+    return get_target_by_class_id(p_dev->get_class_id());
+}
+
+void target_ReplyGood(cbs_buf_t *p_cbuf)
+{
+    get_target_by_device_no(p_cbuf->device_no)->reply_good(p_cbuf);
+}
+
+void target_ReplyNoDevice(cbs_buf_t *p_cbuf)
+{
+    get_target_by_device_no(p_cbuf->device_no)->reply_nodevice(p_cbuf);
+}
+
+void target_ReplyCmdAborted(cbs_buf_t *p_cbuf)
+{
+    get_target_by_device_no(p_cbuf->device_no)->reply_cmd_aborted(p_cbuf);
+}
+
+void target_ReplyCmdDoneWithError(cbs_buf_t *p_cbuf, uint32 sense)
+{
+    get_target_by_device_no(p_cbuf->device_no)->reply_cmd_with_error(p_cbuf, sense);
+}
+
+void target_ReplyComplete(cbs_buf_t *p_cbuf)
+{
+    get_target_by_device_no(p_cbuf->device_no)->reply_complete(p_cbuf);
+}
+
+void target_ReplyError(cbs_buf_t *p_cbuf)
+{
+    get_target_by_device_no(p_cbuf->device_no)->reply_error(p_cbuf);
+}
+
+uint32 target_LoadInquiryPage(cbs_buf_t *p_cbuf, uint8 *p_buf, uint32 nbytes)
+{
+    return get_target_by_device_no(p_cbuf->device_no)->load_inquiry_page(p_cbuf, p_buf, nbytes);
+}
+
+
+void target_QueueCbuf(CDevice *p_dev,  cbs_buf_t *p_cbuf)
+{
+    CTarget *p_target = get_target_by_class_id(p_dev->get_class_id());
+    p_target->queue_cbuf(p_dev, p_cbuf);
+}
+
+void target_DeviceScan(CDevice *p_dev)
+{
+    CTarget *p_target = get_target_by_class_id(p_dev->get_class_id());
+
+    /** scan the timer queue of the device */
+    p_dev->check_expire();
+    /** scan the device */
+    p_target->device_scan(p_dev);
+}
+
+
+/*-----------------------------------------class target-------------------------------------------------------------------*/
 void CTarget::translate_sense_ctx(uint32 sense_ctx, scsi_sense_info_t *p_sense_info)
 {
     uint16 add_code_qual;
@@ -146,8 +270,188 @@ void CTarget::build_check_resp_info(cbs_buf_t *p_cbuf)
     return;
 }
 
+/** load inquiry pages */
+uint32 CTarget::load_unit_serial(cbs_buf_t *p_cbuf, uint8 *p_buf, uint32 nbytes)
+{
+    uint32 copy_size;
+    scsi_inquiry_vpd_unit_serial_t *p_inq;
+    scsi_inquiry_vpd_unit_serial_t local_inquiry;
+    CDevice *p_dev;
+
+    p_dev = get_device_by_index(p_cbuf->device_no);
+    p_inq = &local_inquiry;
+
+    p_inq->type = 0;
+    p_inq->page = 0x80;
+    p_inq->rsvd = 0;
+    p_inq->length = 0x12;
+
+    copy_size = MIN(nbytes, sizeof(scsi_inquiry_vpd_unit_serial_t));
+    rtu_MemCopy(p_buf, (uint8 *)&local_inquiry, copy_size);
+
+    return copy_size;
+}
+
+uint32 CTarget::load_wwn(cbs_buf_t *p_cbuf, uint8 *p_buf, uint32 nbytes)
+{
+    uint32 copy_size;
+    scsi_inquiry_vpd_wwn_t *p_inq;
+    scsi_inquiry_vpd_wwn_t local_inquiry;
+    unique_id_t unique;
+    p_inq = &local_inquiry;
+
+    p_inq->type = 0;
+    p_inq->page = 0x83;
+    p_inq->rsvd = 0;
+    p_inq->length = 0xc;
+    p_inq->code_set = 0x01;
+    p_inq->assoc_idtype = 0x13;
+    p_inq->reserved = 0x00;
+    p_inq->id_len = 0x08;
+    p_inq->id[0] = unique.bytes[0];
+    p_inq->id[1] = unique.bytes[1];
+    p_inq->id[2] = unique.bytes[2];
+    p_inq->id[3] = unique.bytes[3];
+    p_inq->id[4] = unique.bytes[4];
+    p_inq->id[5] = unique.bytes[5];
+    p_inq->id[6] = unique.bytes[6];
+    p_inq->id[7] = unique.bytes[7];
+    copy_size = MIN(nbytes, sizeof(scsi_inquiry_vpd_wwn_t));
+    rtu_MemCopy(p_buf, (uint8 *)&local_inquiry, copy_size);
+
+    return copy_size;
+}
+
+uint32 CTarget::_load_Firmware(cbs_buf_t *p_cbuf, uint8 *p_buf, uint32 nbytes)
+{
+    uint32 copy_size;
+    scsi_inquiry_firmware_t *p_inq;
+    scsi_inquiry_firmware_t local_inquiry;
+    uint32  version = 0; /* Fix Me. */ //ver_GetFirmwareRevision();
+
+    p_inq = &local_inquiry;
+
+    p_inq->type = 0;
+    p_inq->page = 0xC0;
+    p_inq->rsvd = 0;
+    p_inq->length = 0x8;
+    p_inq->release_num[0] = '0';
+    p_inq->release_num[1] = '0';
+    p_inq->release_num[2] = '0';
+    p_inq->release_num[3] = '0';
+    p_inq->release_num[4] = (version & 0xff000000) >> 24;
+    p_inq->release_num[5] = (version & 0x00ff0000) >> 16;
+    p_inq->release_num[6] = (version & 0x0000ff00) >> 8;
+    p_inq->release_num[7] = (version & 0x000000ff);
+
+    copy_size = MIN(nbytes, sizeof(scsi_inquiry_firmware_t));
+    rtu_MemCopy(p_buf, (uint8 *)&local_inquiry, copy_size);
+
+    return copy_size;
+}
+
+uint32 CTarget::_load_stand_inquiry_page(CDevice *p_dev, cbs_buf_t *p_cbuf, uint8 *p_buf, uint32 nbytes)
+{
+    scsi_inquiry_info_t *p_inq;
+    scsi_inquiry_info_t local_inquiry;
+    uint32 copy_size;
+
+    p_inq = &local_inquiry;
+    p_inq->type = 0;
+    p_inq->modifier = 0;
+    p_inq->version = 0x5;
+    p_inq->rdf = 0x02; /* NACA unsupported */
+    p_inq->length = sizeof(scsi_inquiry_info_t) - 4;
+    p_inq->rsvd = 0;
+
+    p_inq->bits = 0x32; /* wide data (16bit) | SYNC Transfer | Tagged Command Queueing enable */
+    p_inq->clocking = 0x0f; /* ST&DT | QAS | IUS */
+
+    p_inq->version_descs[1] =   0x03;
+    p_inq->version_descs[0] =   0x01;
+
+
+    strncpy((char *)&p_inq->prod_id, "TARGET UNKNOWN  ", 16);
+    strncpy((char *)&p_inq->rev_id, "0000", 4);
+    strncpy((char *)&p_inq->serial, "12345678", 8);
+
+    /* call target specific funciton here */
+    load_stand_inquiry_page(p_dev, p_cbuf, p_buf, nbytes); 
+
+    copy_size = MIN(nbytes, sizeof(scsi_inquiry_info_t));
+    rtu_MemCopy(p_buf, (uint8 *)&local_inquiry, copy_size);
+
+    return copy_size;
+}
+
+uint32 CTarget::load_stand_inquiry_page(CDevice *p_dev, cbs_buf_t *p_cbuf, uint8 *p_buf, uint32 nbytes)
+{
+    return 0;
+}
+
+/*
+ *Function Name:load_inquiry_page
+ *
+ *Parameters:
+ *
+ *Description:load inquiry page when we recieved a inquiry CDB.
+ *
+ *Returns:return the length of the page that we supported,return SCSI_UNSUPPORTED_INQUIRY_PAGE_LEN if the page we unsupported
+ *
+ */
+uint32 CTarget::load_inquiry_page(cbs_buf_t *p_cbuf, uint8 *p_buf, uint32 nbytes)
+{
+    uint32 copy_size;
+    uint32 i;
+    uint8  page_num;
+    uint8 *p_cdb = &(p_cbuf->packet.cmd.cdb[0]);
+
+    if (!(p_cdb[1] & 0x1))
+    {
+        CDevice *p_dev = get_device_by_index(p_cbuf->device_no);
+        copy_size = _load_stand_inquiry_page(p_dev, p_cbuf, p_buf, nbytes);
+    } else
+    {
+        page_num = p_cdb[2];
+        copy_size = 0;
+
+        if (page_num == 0)
+        {
+            /* list of supported pages */
+            scsi_inquiry_vpd_list_t *p_inq;
+            scsi_inquiry_vpd_list_t local_inquiry;
+            p_inq =  &local_inquiry;
+            p_inq->type = 0;
+            p_inq->page = 0;
+            p_inq->rsvd = 0;
+            p_inq->length = 0;
+            std::map<int, load_inq_func>::iterator mit = _inq_pages.begin();
+            for (i = 0; mit != _inq_pages.end(); mit++, i++)
+            {
+                p_inq->supported_pages[i] = mit->first;
+                p_inq->length++;
+            }
+
+            copy_size = p_inq->length + 4;
+            copy_size = MIN(copy_size, nbytes);
+            rtu_MemCopy(p_buf, (uint8 *)&local_inquiry, copy_size);
+        } else
+        {
+            copy_size = SCSI_UNSUPPORTED_INQUIRY_PAGE_LEN;
+            std::map<int, load_inq_func>::iterator mit = _inq_pages.find(page_num);
+            if (mit != _inq_pages.end())
+            {
+                copy_size = (this->*_inq_pages[page_num])(p_cbuf, p_buf, nbytes);
+            }
+        }
+    }
+
+    return copy_size;
+}
+
 RT_STATUS CTarget::queue_cbuf(CDevice *p_dev, cbs_buf_t *p_cbuf)
 {
+    /** 1. check if the device was match   */
     if (p_dev->_index != p_cbuf->device_no)
     {
         LOG_ERROR("cbuf should be add to device:0x%x, "
@@ -155,6 +459,8 @@ RT_STATUS CTarget::queue_cbuf(CDevice *p_dev, cbs_buf_t *p_cbuf)
         p_cbuf->device_no = p_dev->_index;
     }
 
+
+    /** 2. add the CBUF to the device queue */
     spin_lock(&p_dev->_q_lock);
     if (p_cbuf->flags & CBUF_FLAG_QUEUE_FIRST)
     {
@@ -176,7 +482,8 @@ RT_STATUS CTarget::queue_cbuf(CDevice *p_dev, cbs_buf_t *p_cbuf)
 
     if ((p_cbuf->flags & CBUF_FLAG_SCAN_LATER) != 0) return RT_OK;
 
-    queue_scan(p_dev);
+    /** 3. scan the device queue */
+    target_DeviceScan(p_dev);
 
     return RT_OK;
 }
@@ -212,7 +519,7 @@ void CTarget::target_cmd_done(cbs_buf_t *p_cbuf)
     p_cbuf->target.generic.args[0] = 0;
 
     /* work on target sid finished, call init_IODone */
- //   init_IODone(p_cbuf);
+    //   init_IODone(p_cbuf);
 
     return;
 }
@@ -232,21 +539,100 @@ uint32 CTarget::target_extract_sense_info(scsi_sense_info_t& sense_info, uint32 
     return SCSI_SENSE_LEN;
 }
 
-void CTarget::target_reply_good(cbs_buf_t *p_cbuf)
+void CTarget::reply_good(cbs_buf_t *p_cbuf)
 {
     p_cbuf->packet.response.completion_status = 0;
     p_cbuf->packet.response.status = SCSI_STATUS_GOOD;
     p_cbuf->response = CBUF_RESP_COMPLETE;
+
+    cbuf_done(p_cbuf);
 }
 
-void CTarget::target_reply_nodevice(cbs_buf_t *p_cbuf)
+void CTarget::reply_nodevice(cbs_buf_t *p_cbuf)
 {
     p_cbuf->target.gen.sense_context = SENSE_CTX_LUN_UNSUPPORTED;
     p_cbuf->packet.response.status = SCSI_STATUS_CHECK;
     p_cbuf->response = CBUF_RESP_NO_DEVICE;
+
+    cbuf_done(p_cbuf);
 }
 
-void CTargetManager::target_class_init(uint32 class_id, uint32 flags, const char *p_name, CTarget *p_target)
+void CTarget::reply_cmd_aborted(cbs_buf_t *p_cbuf)
+{
+    /** cbuf has been release, just return. */
+    if (p_cbuf->links.flag == CBUF_FREE_Q)
+    {
+        LOG_ERROR("cbuf[%u, %u] is in free q", p_cbuf->index, p_cbuf->sequence);
+        return;
+    }
+
+    p_cbuf->target.gen.sense_context = SENSE_CTX_SCSI_PARITY_ERR;
+    p_cbuf->packet.response.status = SCSI_STATUS_CHECK;
+    p_cbuf->residual = p_cbuf->requested_transfer_size;
+
+    if (p_cbuf->response != CBUF_RESP_TIMEOUT && p_cbuf->response != CBUF_RESP_ABORTED)
+    {
+        p_cbuf->response = CBUF_RESP_COMPLETE;
+    }
+
+    /** Major difference with other target_ReplyXXX function.
+     * 1. we want to return CBUF_RESP_TIMEOUT, CBUF_RESP_ABORT or 
+     * CBUF_RESP_COMPLETE respectively which tells initiator what 
+     * happened when a command aborted by target. Timeout?Or 
+     * explicit abort? or other errors. 
+     */
+    cbuf_done(p_cbuf);
+
+    return;
+
+}
+
+void CTarget::reply_cmd_with_error(cbs_buf_t *p_cbuf, uint32 sense)
+{
+    BUG_ON(sense == SENSE_CTX_NONE);
+    assert(sense < nb_sense_contexts);
+
+    if ((sense == SENSE_CTX_RESET_POWER_ON) || (sense == SENSE_CTX_RESET_DIRECTED))
+    {
+        target_ReplyGood(p_cbuf);
+        return;
+    }
+
+    switch (sense)
+    {
+    case SENSE_CTX_RESERVE_CONF:
+        p_cbuf->packet.response.status = SCSI_STATUS_CONFLICT;
+        break;
+    case SENSE_CTX_TASK_FULL:
+        p_cbuf->packet.response.status = SCSI_STATUS_TASK_SET_FULL;
+        break;
+    default:
+        p_cbuf->packet.response.status = SCSI_STATUS_CHECK;
+        break;
+    }
+
+    p_cbuf->target.gen.sense_context = sense;
+    p_cbuf->response = CBUF_RESP_COMPLETE;
+    p_cbuf->residual = p_cbuf->requested_transfer_size;
+
+    cbuf_done(p_cbuf);
+}
+
+void CTarget::reply_complete(cbs_buf_t *p_cbuf)
+{
+    p_cbuf->response = CBUF_RESP_COMPLETE;
+    cbuf_done(p_cbuf);
+}
+
+void CTarget::reply_error(cbs_buf_t *p_cbuf)
+{
+    p_cbuf->packet.response.status = SCSI_STATUS_CHECK;
+    p_cbuf->response = CBUF_RESP_ERROR;
+    cbuf_done(p_cbuf);
+}
+
+/*-----------------------class targetpool------------------------------------------------*/
+void CTargetPool::target_class_init(uint32 class_id, uint32 flags, const char *p_name, CTarget *p_target)
 {
     assert(class_id < TARGET_CLASS_MAX);
     assert(G_targets[class_id] == NULL);
@@ -260,15 +646,15 @@ void CTargetManager::target_class_init(uint32 class_id, uint32 flags, const char
     return;
 }
 
-void CTargetManager::init()
+void CTargetPool::init()
 {
-    CTargetUninit* p_target = new CTargetUninit;
+    CTargetUninit *p_target = new CTargetUninit;
     assert(p_target == NULL);
     target_class_init(TARGET_CLASS_UNINIT, 0, "TARGET_CLASS_UNINIT", p_target);
     return;
 }
 
-void CTargetUninit::queue_scan(CDevice *p_dev)
+void CTargetUninit::device_scan(CDevice *p_dev)
 {
     LOG_FATAL("device:[%u, %s] is uninit target class", p_dev->get_device_no(), p_dev->_name.c_str());
     assert(false);

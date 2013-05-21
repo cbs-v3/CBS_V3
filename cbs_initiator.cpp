@@ -97,8 +97,14 @@ void CInitiator::io_start(cbs_buf_t *p_cbuf)
     p_dev->add_timer(&p_cbuf->timer);
 
     /*queue to device*/
-
-
+    if (device_IsAllocted(p_dev))
+    {
+        target_QueueCbuf(p_dev, p_cbuf);
+    }else
+    {
+        LOG_ERROR("CBUF was queued to device:%u that has not been allocted", p_dev->get_device_no());
+        target_ReplyNoDevice(p_cbuf);
+    }
 
     return;
 }
@@ -114,7 +120,7 @@ void CInitiator::process_request(u32_64 current_req/*pointer of the request that
         /** translate the current request packet to cbuf format */
         req2cbuf(p_cbuf, current_req);
         /** do StartIO */
-        io_start(p_cbuf);   /** fc_IOStart/thread_IOStart... */
+        io_start(p_cbuf);   /** iscsi_IOStart/thread_IOStart... */
     } else
     {
         LOG_FATAL("cbuf exhausted!!!");
