@@ -3,6 +3,67 @@
 
 #include "cbs_types.h"
 
+#define SCMD_GROUP0             0x00
+#define SCMD_TEST_UNIT_READY    0x00
+#define SCMD_REZERO_UNIT        0x01
+#define SCMD_REQUEST_SENSE      0x03
+#define SCMD_FORMAT             0x04
+#define SCMD_REASSIGN_BLOCK     0x07
+#define SCMD_READ               0x08
+#define SCMD_WRITE              0x0a
+#define SCMD_SEEK               0x0b
+#define SCMD_INQUIRY            0x12
+#define SCMD_MODE_SELECT        0x15
+#define SCMD_RESERVE            0x16
+#define SCMD_RELEASE            0x17
+#define SCMD_COPY               0x18
+#define SCMD_MODE_SENSE         0x1a
+#define SCMD_START_STOP         0x1b
+#define SCMD_GDIAG              0x1c
+#define SCMD_SDIAG              0x1d
+#define SCMD_DOORLOCK           0x1e
+
+#define SCMD_GROUP1             0x20
+#define SCMD_READ_CAPACITY      0x25
+#define SCMD_READ_G1            0x28
+#define SCMD_WRITE_G1           0x2a
+#define SCMD_SEEK_G1            0x2b
+#define SCMD_WRITE_VERIFY       0x2e
+#define SCMD_VERIFY             0x2f
+#define SCMD_SEARCH_HIGH        0x30
+#define SCMD_SEARCH_EQUAL       0x31
+#define SCMD_SEARCH_LOW         0x32
+#define SCMD_SET_LIMITS         0x33
+#define SCMD_SYNC_CACHE         0x35
+#define SCMD_READ_DEFECT_LIST   0x37
+#define SCMD_COMPARE            0x39
+#define SCMD_COPY_VERIFY        0x3a
+#define SCMD_WRITE_BUFFER       0x3b
+#define SCMD_READ_BUFFER        0x3c
+#define SCMD_READ_LONG          0x3e
+#define SCMD_WRITE_LONG         0x3f
+#define SCMD_LOG_SELECT         0x4c
+#define SCMD_LOG_SENSE          0x4d
+
+#define SCMD_MODE_SELECT_10     0x55
+#define SCMD_RESERVE_10         0x56
+#define SCMD_RELEASE_10         0x57
+#define SCMD_MODE_SENSE_10      0x5a
+#define SCMD_PERSIST_RESERVE_IN     0x5e
+#define SCMD_PERSIST_RESERVE_OUT    0x5f
+
+#define SCMD_REPORT_LUN         0xa0
+#define SCMD_SYNC_CACHE16       0x91
+#define SCMD_READ_CAPACITY16    0x9e
+#define SCMD_READ_12            0xa8
+#define SCMD_READ_16            0x88
+#define SCMD_WRITE_12           0xaa
+#define SCMD_WRITE_16           0x8a
+#define SCMD_WRITE_VERIFY_12    0xae
+#define SCMD_WRITE_VERIFY_16    0x8e
+#define SCMD_VERIFY_12          0xaf
+#define SCMD_VERIFY_16          0x8f
+
 #define SCSI_STATUS_GOOD              0x00
 #define SCSI_STATUS_CHECK             0x02
 #define SCSI_STATUS_BUSY              0x08

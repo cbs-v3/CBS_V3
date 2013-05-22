@@ -37,4 +37,9 @@ static inline void rtu_MemCopy(uint8 *p_mem_dest, const uint8 *p_mem_src, uint32
     memcpy(p_mem_dest, p_mem_src, n_bytes);
 }
 
+static inline void rtu_MemZero(uint8 *p_address, uint32 n_bytes)
+{
+    memset(p_address,0,n_bytes);
+}
+
 #endif

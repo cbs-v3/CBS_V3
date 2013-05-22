@@ -113,7 +113,121 @@ typedef struct scsi_inquiry_vpd_list {
     uint8 rsvd;    /* 0x0 */
     uint8 length;  /* 0x8 */
     uint8 supported_pages[16];
-} scsi_inquiry_vpd_list_t;
+}scsi_inquiry_vpd_list_t;
+
+typedef struct scsi_mode_page2 {
+    uint8 page;                 /* 0x82 */
+    uint8 len;                  /* 0x0e */
+    uint8 buffer_full;          /* 0x80 */
+    uint8 buffer_empty;         /* 0x80 */
+    uint8 buffer_inact_msb;     /* 0x00 */
+    uint8 buffer_inact_lsb;     /* 0x0a */
+    uint16 disconn_time_limit;  /* 0x0000 */
+    uint16 conn_time_limit;     /* 0x0000 */
+    uint16 max_burst_size;      /* 0x0000 */
+    uint8 diss_bits;            /* 0x0 */
+    uint8 reserved1;            /* 0x0 */
+    uint16 first_burst_size;     /* 0x0 */
+}scsi_mode_page2_t;
+
+/**
+ * Format Parameters Mode Page
+ */
+
+typedef struct scsi_mode_page3{
+    uint8 page;                 /* 0x83 */
+    uint8 len;                  /* 0x16 */
+    uint16 tracks_per_zone;     /* 0x0015 */
+    uint16 alt_sect_per_zone;   /* 0x0009 */
+    uint16 alt_trks_per_zone;   /* 0x0000 */
+    uint16 alt_trks_per_vol;    /* 0x0015 */
+    uint16 sectors_per_track;   /* 0x0080 */
+    uint16 bytes_per_sector;    /* 0x0200 */
+    uint16 interleave;          /* 0x0001 */
+    uint16 track_skew;          /* 0x0009 */
+    uint16 cylinder_skew;       /* 0x0010 */
+    uint8 bits;                 /* 0x04 */
+    uint8 reserved1;            /* 0x0 */
+    uint8 reserved2;            /* 0x0 */
+    uint8 reserved3;            /* 0x0 */
+}scsi_mode_page3_t;
+
+/**
+ * Disk Geometry Mode page
+ */
+typedef struct scsi_mode_page4{
+    uint8 page;                 /* 0x84 */
+    uint8 len;                  /* 0x16 */
+    uint8 num_cylinders_msb;    /* 0x00 */
+    uint8 num_cylinders;        /* 0x0e */
+    uint8 num_cylinders_lsb;    /* 0x80 */
+    uint8 num_heads;            /* 0x20 */
+    uint8 start_cyl_wrt_pre0;   /* 0x00 */
+    uint8 start_cyl_wrt_pre1;   /* 0x00 */
+    uint8 start_cyl_wrt_pre2;   /* 0x00 */
+    uint8 start_cyl_red_wrt0;   /* 0x00 */
+    uint8 start_cyl_red_wrt1;   /* 0x00 */
+    uint8 start_cyl_red_wrt2;   /* 0x00 */
+    uint8 drive_step_rate0;     /* 0x0000 */
+    uint8 drive_step_rate1;     /* 0x0000 */
+    uint8 landing_zone0;        /* 0x0000 */
+    uint8 landing_zone1;        /* 0x0000 */
+    uint8 landing_zone2;        /* 0x0000 */
+    uint8 rpl;                  /* 0x00 */
+    uint8 rotational_offset;    /* 0x00 */
+    uint8 reserved1;            /* 0x00 */
+    uint16 medium_rot_rate;     /* 0x1c20 */
+    uint8 reserved2;            /* 0x0 */
+    uint8 reserved3;            /* 0x0 */
+}scsi_mode_page4_t;
+
+/**
+ * Caching Parameters Page
+ */
+typedef struct scsi_mode_page8{
+    uint8 page;                 /* 0x84 */
+    uint8 len;                  /* 0x12 */
+    uint8 bits;                 /* 0x14 */
+    uint8 retention_prio;       /* 0x00 */
+    uint16 dis_pref_xfer_len;   /* 0xffff */
+    uint16 minimum_prefetch;    /* 0x0000 */
+    uint16 max_prefetch;        /* 0x009f */
+    uint16 max_pref_ceiling;    /* 0x027c */
+    uint8 fsw_lbcss_dra;        /* 0x80 */
+    uint8 num_cache_segs;       /* 0x03 */
+    uint16 cache_seg_size;      /* 0x0000 */
+    uint8 reserved;             /* 0x00 */
+    uint8 non_cache_seg0;       /* 0x00 */
+    uint8 non_cache_seg1;       /* 0x00 */
+    uint8 non_cache_seg2;       /* 0x00 */
+}scsi_mode_page8_t;
+
+/**
+ * Mode Sense/Select Control Page
+ */
+typedef struct scsi_mode_pageA{
+    uint8 page;                 /* 0x8a */
+    uint8 len;                  /* 0x0a */
+    uint8 bits;                 /* 0x02 */
+    uint8 queue_bits;           /* 0x10 */
+    uint8 rac_swp;              /* 0x00 */
+    uint8 autoload_mode;            /* 0x00 */ //changed from reserved to auto
+    uint16 unsupp;              /* 0x0000 */
+    uint16 busy_timeout;        /* 0x0000 */
+    uint16 st_completion_time;   /* 0x00 */   //changed from reserved to..
+}scsi_mode_pageA_t;
+
+/**
+ * Informational Exceptions Page
+ */
+typedef struct scsi_mode_page1C{
+    uint8 page;                 /* 0x9c */
+    uint8 len;                  /* 0x0a */
+    uint8 bits;                 /* 0x00 */
+    uint8 mrie;                 /* 0x00 */
+    uint32 interval_timer;      /* 0x00000000 */
+    uint32 report_count;        /* 0x00000000 */
+}scsi_mode_page1C_t;
 
 static CTargetPool g_target_pool;
 
@@ -163,6 +277,10 @@ uint32 target_LoadInquiryPage(cbs_buf_t *p_cbuf, uint8 *p_buf, uint32 nbytes)
     return get_target_by_device_no(p_cbuf->device_no)->load_inquiry_page(p_cbuf, p_buf, nbytes);
 }
 
+uint32 target_LoadModePage(cbs_buf_t *p_cbuf, uint8 *p_buf, uint32 nbytes)
+{
+    return get_target_by_device_no(p_cbuf->device_no)->load_mode_page(p_cbuf, p_buf, nbytes);
+}
 
 void target_QueueCbuf(CDevice *p_dev,  cbs_buf_t *p_cbuf)
 {
@@ -270,8 +388,8 @@ void CTarget::build_check_resp_info(cbs_buf_t *p_cbuf)
     return;
 }
 
-/** load inquiry pages */
-uint32 CTarget::load_unit_serial(cbs_buf_t *p_cbuf, uint8 *p_buf, uint32 nbytes)
+/****************************** load inquiry pages *********************************/
+uint32 CTarget::load_unit_serial_page(cbs_buf_t *p_cbuf, uint8 *p_buf, uint32 nbytes)
 {
     uint32 copy_size;
     scsi_inquiry_vpd_unit_serial_t *p_inq;
@@ -292,7 +410,7 @@ uint32 CTarget::load_unit_serial(cbs_buf_t *p_cbuf, uint8 *p_buf, uint32 nbytes)
     return copy_size;
 }
 
-uint32 CTarget::load_wwn(cbs_buf_t *p_cbuf, uint8 *p_buf, uint32 nbytes)
+uint32 CTarget::load_wwn_page(cbs_buf_t *p_cbuf, uint8 *p_buf, uint32 nbytes)
 {
     uint32 copy_size;
     scsi_inquiry_vpd_wwn_t *p_inq;
@@ -322,7 +440,7 @@ uint32 CTarget::load_wwn(cbs_buf_t *p_cbuf, uint8 *p_buf, uint32 nbytes)
     return copy_size;
 }
 
-uint32 CTarget::_load_Firmware(cbs_buf_t *p_cbuf, uint8 *p_buf, uint32 nbytes)
+uint32 CTarget::_load_Firmware_page(cbs_buf_t *p_cbuf, uint8 *p_buf, uint32 nbytes)
 {
     uint32 copy_size;
     scsi_inquiry_firmware_t *p_inq;
@@ -348,6 +466,11 @@ uint32 CTarget::_load_Firmware(cbs_buf_t *p_cbuf, uint8 *p_buf, uint32 nbytes)
     rtu_MemCopy(p_buf, (uint8 *)&local_inquiry, copy_size);
 
     return copy_size;
+}
+
+uint32 CTarget::_load_zero_page(cbs_buf_t *p_cbuf, uint8 *p_buf, uint32 nbytes)
+{
+    return 0;
 }
 
 uint32 CTarget::_load_stand_inquiry_page(CDevice *p_dev, cbs_buf_t *p_cbuf, uint8 *p_buf, uint32 nbytes)
@@ -376,7 +499,7 @@ uint32 CTarget::_load_stand_inquiry_page(CDevice *p_dev, cbs_buf_t *p_cbuf, uint
     strncpy((char *)&p_inq->serial, "12345678", 8);
 
     /* call target specific funciton here */
-    load_stand_inquiry_page(p_dev, p_cbuf, p_buf, nbytes); 
+    load_stand_inquiry_page(p_dev, p_cbuf, p_buf, nbytes);
 
     copy_size = MIN(nbytes, sizeof(scsi_inquiry_info_t));
     rtu_MemCopy(p_buf, (uint8 *)&local_inquiry, copy_size);
@@ -448,6 +571,384 @@ uint32 CTarget::load_inquiry_page(cbs_buf_t *p_cbuf, uint8 *p_buf, uint32 nbytes
 
     return copy_size;
 }
+/************************************* end of loadding inquiry pages **************************/
+
+/************************************* load mode pages **************************************/
+uint32 CTarget::load_mode_page(cbs_buf_t *p_cbuf, uint8 *p_buf, uint32 nbytes)
+{
+    uint32 page_len;
+    uint32 copy_len;
+    uint32 total_len;
+    uint32 alloc_len;
+    uint32 i;
+    uint8 page_num;
+    uint8 subpage_num;
+    uint8 *p;
+    uint8 *p_cdb;
+
+    p_cdb = &(p_cbuf->packet.cmd.cdb[0]);
+
+    page_num = p_cdb[2] & 0x3f;
+    subpage_num = p_cdb[3];
+    p = p_buf;
+    total_len = 0;
+
+    if (p_cdb[0] == SCMD_MODE_SENSE)
+    {
+        alloc_len = p_cdb[4];
+        total_len = 4;
+        for (i = 0; i < 4; i++)
+        {
+            p[i] = 0;
+        }
+        if ((p_cdb[1] & 0x08) == 0) // disable block descriptors
+        {
+            p[3] = 8; /* block descriptor_length */
+        }
+        p += 4;
+    } else
+    {
+        alloc_len = p_cdb[7];
+        alloc_len <<= 8;
+        alloc_len += p_cdb[8];
+
+        assert(p_cdb[0] == SCMD_MODE_SENSE_10);
+        total_len = 8;
+        for (i = 0; i < 8; i++)
+        {
+            p[i] = 0;
+        }
+        if ((p_cdb[1] & 0x08) == 0) // disable block descriptors
+        {
+            p[7] = 8; /* block descriptor_length */
+        }
+        p += 8;
+    }
+    if ((p_cdb[1] & 0x08) == 0) // disable block descriptors
+    {
+        /* block descriptor */
+        for (i = 0; i < 8; i++)
+        {
+            p[i] = 0;
+        }
+        p[6] = 2; /* block size  = 512  = 0x200 */
+
+        p += 8;
+        total_len += 8;
+    }
+
+    if (page_num == 0x3f)
+    {
+        /* return all pages */
+        std::map<int, std::map<int, load_mod_func> >::iterator mit_1 = _mod_pages.begin();
+        for (; mit_1 != _mod_pages.end(); mit_1++)
+        {
+            std::map<int, load_mod_func>::iterator mit_2 = mit_1->second.begin();
+            for (; mit_2 != mit_1->second.end(); mit_2++)
+            {
+                //page_num = 0x3f && subpage_num =0, just return the page,so ,we skip the subpage here.
+                if ((subpage_num == 0) && (mit_2->first != 0))
+                {
+                    continue;
+                }
+
+                //if subpage_num =0, we just load page; if subpage_num !=0, we load all pages;
+                copy_len = (this->*mit_2->second)(p_cbuf, p, alloc_len);
+                page_len = p[1] + 2; //include Page Code and Page Length
+                alloc_len -= copy_len;
+                p += copy_len;
+
+                total_len += page_len;
+            }
+        }
+    } else // load individual page
+    {
+        if (subpage_num != 0xFF)
+        {
+            /* return individual pages */
+            std::map<int, std::map<int, load_mod_func> >::iterator mit_1 = _mod_pages.begin();
+            for (; mit_1 != _mod_pages.end(); mit_1++)
+            {
+                if (mit_1->first == page_num)
+                {
+                    std::map<int, load_mod_func>::iterator mit_2 = mit_1->second.begin();
+                    for (; mit_2 != mit_1->second.end(); mit_2++)
+                    {
+                        if (mit_2->first == subpage_num)
+                        {
+
+                            //if subpage_num =0, we just load page; if subpage_num !=0, we load all pages;
+                            copy_len = (this->*mit_2->second)(p_cbuf, p, alloc_len);
+                            page_len = p[1] + 2; //include Page Code and Page Length
+                            alloc_len -= copy_len;
+                            p += copy_len;
+
+                            total_len += page_len;
+                        }
+                    }
+                }
+            }
+        } else
+        {
+            /* return individual pages with all subpage*/
+            std::map<int, std::map<int, load_mod_func> >::iterator mit_1 = _mod_pages.find(page_num);
+            if (mit_1 != _mod_pages.end())
+            {
+                std::map<int, load_mod_func>::iterator mit_2 = mit_1->second.begin();
+                for (; mit_2 != mit_1->second.end(); mit_2++)
+                {
+                    copy_len = (this->*mit_2->second)(p_cbuf, p, alloc_len);
+                    page_len = p[1] + 2; //include Page Code and Page Length
+                    alloc_len -= copy_len;
+                    p += copy_len;
+
+                    total_len += page_len;
+                }
+            }
+        }
+    }
+
+    /*
+     * fill in length field
+     */
+
+    if (p_cdb[0] == SCMD_MODE_SENSE)
+    {
+        page_len = total_len - 1; // dont include Mode sense data length itself
+        p_buf[0] = page_len & 0xff;
+    } else /* SCMD_MODE_SENSE_10 */
+    {
+        page_len = total_len - 2;
+        p_buf[0] = (page_len & 0xff00) >> 8;
+        p_buf[1] = page_len & 0xff;
+    }
+
+    return total_len;
+}
+
+uint32 CTarget::load_disconnect_reconnect_page(cbs_buf *p_cbuf, uint8 *p_buf, uint32 n_bytes)
+{
+    uint32 copy_size;
+    scsi_mode_page2_t *p_mode;
+    scsi_mode_page2_t local_page;
+    uint8 *p_cdb;
+
+    p_cdb = p_cbuf->packet.cmd.cdb;
+
+    p_mode = &local_page;
+
+    rtu_MemZero((uint8 *)&local_page, sizeof(scsi_mode_page2));
+
+    p_mode->page = 0x02;
+    p_mode->len = 0x0e;
+    if ((p_cdb[2] & 0xc0) != 0x40)
+    {
+        p_mode->buffer_full = 0x80;
+        p_mode->buffer_empty = 0x80;
+        p_mode->buffer_inact_msb = 0x00;
+        p_mode->buffer_inact_lsb =  0x0a;
+        p_mode->disconn_time_limit = 0x0000;
+        p_mode->conn_time_limit = 0x0000;
+        p_mode->max_burst_size = 0x0000;
+        p_mode->diss_bits = 0; // 0x0b;   // DTDC = 011
+        p_mode->reserved1 = 0x0;
+        p_mode->first_burst_size = 0x0;
+    }
+
+    copy_size = MIN(n_bytes, sizeof(scsi_mode_page2_t));
+    rtu_MemCopy(p_buf, (uint8 *)&local_page, sizeof(scsi_mode_page2_t)); //copy whole page anyway
+
+    return copy_size;
+}
+
+/**
+ * Format Parameters Mode Page
+ */
+uint32 CTarget::load_format_parameters_page(cbs_buf *p_cbuf, uint8 *p_buf, uint32 n_bytes)
+{
+    uint32 copy_size;
+    scsi_mode_page3_t *p_mode;
+    scsi_mode_page3_t local_page;
+    uint8 *p_cdb;
+
+    p_cdb = p_cbuf->packet.cmd.cdb;
+
+    p_mode = &local_page;
+
+    rtu_MemZero((uint8*)&local_page, sizeof(scsi_mode_page3_t));
+
+    p_mode->page = 0x03;
+    p_mode->len = 0x16;
+    if((p_cdb[2] & 0xc0) != 0x40){
+        p_mode->tracks_per_zone = 0x0015;
+        p_mode->alt_sect_per_zone = 0x0009;
+        p_mode->alt_trks_per_zone = 0x0000;
+        p_mode->alt_trks_per_vol = 0x0015;
+        p_mode->sectors_per_track = 0x0080;
+        p_mode->bytes_per_sector = 0x0200;
+        p_mode->interleave = 0x0001;
+        p_mode->track_skew = 0x0009;
+        p_mode->cylinder_skew = 0x0010;
+        p_mode->bits = 0x04;
+        p_mode->reserved1 = 0x0;
+        p_mode->reserved2 = 0x0;
+        p_mode->reserved3 = 0x0;
+    }
+    
+    copy_size = MIN(n_bytes, sizeof(scsi_mode_page3_t));
+    rtu_MemCopy(p_buf, (uint8*)&local_page, sizeof(scsi_mode_page3_t));
+
+    return copy_size;
+}
+
+uint32 CTarget::load_disk_geometry_page(cbs_buf *p_cbuf, uint8 *p_buf, uint32 n_bytes)
+{
+    uint32 copy_size;
+    scsi_mode_page4_t *p_mode;
+    scsi_mode_page4_t local_page;
+    uint8 *p_cdb;
+
+    p_cdb = p_cbuf->packet.cmd.cdb;
+
+    p_mode = &local_page;
+
+    rtu_MemZero((uint8*)&local_page, sizeof(scsi_mode_page4_t));
+
+    p_mode->page = 0x04;
+    p_mode->len = 0x16;
+    if((p_cdb[2] & 0xc0) != 0x40){
+        p_mode->page = 0x84;
+        p_mode->len = 0x16;
+        p_mode->num_cylinders_msb = 0x00;
+        p_mode->num_cylinders = 0x0e;
+        p_mode->num_cylinders_lsb = 0x80;
+        p_mode->num_heads = 0x20;
+        p_mode->start_cyl_wrt_pre0 = 0x00;
+        p_mode->start_cyl_wrt_pre1 = 0x00;
+        p_mode->start_cyl_wrt_pre2 = 0x00;
+        p_mode->start_cyl_red_wrt0 = 0x00;
+        p_mode->start_cyl_red_wrt1 = 0x00;
+        p_mode->start_cyl_red_wrt2 = 0x00;
+        p_mode->drive_step_rate0 = 0x0000;
+        p_mode->drive_step_rate1 = 0x0000;
+        p_mode->landing_zone0 = 0x0000;
+        p_mode->landing_zone1 = 0x0000;
+        p_mode->landing_zone2 = 0x0000;
+        p_mode->rpl = 0x00;
+        p_mode->rotational_offset = 0x00;
+        p_mode->reserved1 = 0x00;
+        p_mode->medium_rot_rate = 0x1c20;
+        p_mode->reserved2 = 0x0;
+        p_mode->reserved3 = 0x0;
+    }
+    
+    copy_size = MIN(n_bytes, sizeof(scsi_mode_page4_t));
+    rtu_MemCopy(p_buf, (uint8*)&local_page, sizeof(scsi_mode_page4_t));
+
+    return copy_size;
+}
+
+uint32 CTarget::load_cacheing_parameters_page(cbs_buf *p_cbuf, uint8 *p_buf, uint32 n_bytes)
+{
+    uint32 copy_size;
+    scsi_mode_page8_t *p_mode;
+    scsi_mode_page8_t local_page;
+    uint8 *p_cdb;
+
+    p_cdb = p_cbuf->packet.cmd.cdb;
+
+    p_mode = &local_page;
+
+    rtu_MemZero((uint8*)&local_page, sizeof(scsi_mode_page8_t));
+
+    p_mode->page = 0x08;
+    p_mode->len = 0x12;
+    if((p_cdb[2] & 0xc0) != 0x40){
+        p_mode->bits = 0x14;
+        p_mode->retention_prio = 0x00;
+        p_mode->dis_pref_xfer_len = 0xffff;
+        p_mode->minimum_prefetch = 0x0000;
+        p_mode->max_prefetch = 0x009f;
+        p_mode->max_pref_ceiling = 0x027c;
+        p_mode->fsw_lbcss_dra = 0x80;
+        p_mode->num_cache_segs = 0x03;
+        p_mode->cache_seg_size = 0x0000;
+        p_mode->reserved = 0x00;
+        p_mode->non_cache_seg0 = 0x00;
+        p_mode->non_cache_seg1 = 0x00;
+        p_mode->non_cache_seg2 = 0x00;
+    }
+    
+    copy_size = MIN(n_bytes, sizeof(scsi_mode_page8_t));
+    rtu_MemCopy(p_buf, (uint8*)&local_page, sizeof(scsi_mode_page8_t));
+
+    return copy_size;
+}
+
+/**
+ * Mode Sense/Select Control Page
+ */
+uint32 CTarget::load_control_page(cbs_buf *p_cbuf, uint8 *p_buf, uint32 n_bytes)
+{
+    uint32 copy_size;
+    scsi_mode_pageA_t* p_mode;
+    scsi_mode_pageA_t local_page;
+    uint8 *p_cdb;
+
+    p_cdb = p_cbuf->packet.cmd.cdb;
+
+    p_mode = &local_page;
+
+    rtu_MemZero((uint8*)&local_page, sizeof(scsi_mode_pageA_t));
+
+    p_mode->page = 0x0a;
+    p_mode->len = 0x0a;
+    if((p_cdb[2] & 0xc0) != 0x40){
+        p_mode->page = 0x0a;
+        p_mode->len = 0x0a;
+        p_mode->bits = 0x02;
+        p_mode->queue_bits = 0x10;
+        p_mode->rac_swp = 0x00;
+        p_mode->autoload_mode = 0x00;
+        p_mode->unsupp = 0x0000;
+        p_mode->busy_timeout = 0x0000;
+        p_mode->st_completion_time = 0x00;
+    }
+    
+    copy_size = MIN(n_bytes, sizeof(scsi_mode_pageA_t));
+    rtu_MemCopy(p_buf, (uint8*)&local_page, sizeof(scsi_mode_pageA_t));
+
+    return copy_size;
+}
+
+uint32 CTarget::load_info_exceptions_page(cbs_buf *p_cbuf, uint8 *p_buf, uint32 n_bytes)
+{
+    uint32 copy_size;
+    scsi_mode_page1C_t *p_mode;
+    scsi_mode_page1C_t local_page;
+    uint8 *p_cdb;
+
+    p_cdb = p_cbuf->packet.cmd.cdb;
+
+    p_mode = &local_page;
+
+    rtu_MemZero((uint8*)&local_page, sizeof(scsi_mode_page1C));
+
+    p_mode->page = 0x1c;
+    p_mode->len = 0x0a;
+    if((p_cdb[2] & 0xc0) != 0x40){
+        p_mode->bits = 0x00;
+        p_mode->mrie = 0x00;
+        p_mode->interval_timer = 0x00000000;
+        p_mode->report_count = 0x00000000;
+    }
+
+    copy_size = MIN(n_bytes, sizeof(scsi_mode_page1C_t));
+    rtu_MemCopy(p_buf, (uint8*)&local_page, sizeof(scsi_mode_page1C_t));
+
+    return copy_size;
+}
+/**************************************end of loadding mode pages****************************/
 
 RT_STATUS CTarget::queue_cbuf(CDevice *p_dev, cbs_buf_t *p_cbuf)
 {

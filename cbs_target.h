@@ -24,12 +24,20 @@ class CTarget
 {
 public:
     typedef uint32(CTarget::*load_inq_func)(cbs_buf_t *p_cbuf, uint8 *p_buf, uint32 nbytes);
+    typedef uint32(CTarget::*load_mod_func)(cbs_buf_t *p_cbuf, uint8 *p_buf, uint32 nbytes);
     CTarget()
     {
-        _inq_pages[0x00] = NULL;
-        _inq_pages[0x80] = &CTarget::load_unit_serial;
-        _inq_pages[0x83] = &CTarget::load_wwn;
-        _inq_pages[0xC0] = &CTarget::_load_Firmware;
+        _inq_pages[0x00] = &CTarget::_load_zero_page;
+        _inq_pages[0x80] = &CTarget::load_unit_serial_page;
+        _inq_pages[0x83] = &CTarget::load_wwn_page;
+        _inq_pages[0xC0] = &CTarget::_load_Firmware_page;
+
+        _mod_pages[0x02][0] = &CTarget::load_disconnect_reconnect_page;
+        _mod_pages[0x03][0] = &CTarget::load_format_parameters_page;
+        _mod_pages[0x04][0] = &CTarget::load_disk_geometry_page;
+        _mod_pages[0x08][0] = &CTarget::load_cacheing_parameters_page;
+        _mod_pages[0x0a][0] = &CTarget::load_control_page;
+        _mod_pages[0x1c][0] = &CTarget::load_info_exceptions_page;
     }
     virtual ~CTarget() { }
 
@@ -38,18 +46,19 @@ public:
 
     std::string _name;
     std::map<int, load_inq_func>  _inq_pages;
+    std::map<int, std::map<int, load_mod_func> > _mod_pages;
 
 protected:
     virtual void receive_data(cbs_buf_t *p_cbuf, uint8 *p_data, uint32 size);
     virtual void cmd_done(cbs_buf_t *p_cbuf);
 /** load inquiry page */
     virtual uint32 load_stand_inquiry_page(CDevice *p_dev, cbs_buf_t *p_cbuf, uint8 *p_buf, uint32 nbytes);
-    virtual uint32 load_unit_serial(cbs_buf_t *p_cbuf, uint8 *p_buf, uint32 nbytes);
-    virtual uint32 load_wwn(cbs_buf_t *p_cbuf, uint8 *p_buf, uint32 nbytes);
+    virtual uint32 load_unit_serial_page(cbs_buf_t *p_cbuf, uint8 *p_buf, uint32 nbytes);
+    virtual uint32 load_wwn_page(cbs_buf_t *p_cbuf, uint8 *p_buf, uint32 nbytes);
 
 public:
     RT_STATUS queue_cbuf(CDevice *p_dev, cbs_buf_t *p_cbuf);
-    virtual void device_scan(CDevice *p_dev) = 0; 
+    virtual void device_scan(CDevice *p_dev) = 0;
 
     void target_receive_data(cbs_buf_t *p_cbuf, uint8 *p_data, uint32 size);
     void target_cmd_done(cbs_buf_t *p_cbuf);
@@ -62,6 +71,7 @@ public:
     void reply_complete(cbs_buf_t *p_cbuf);
     void reply_error(cbs_buf_t *p_cbuf);
     uint32 load_inquiry_page(cbs_buf_t *p_cbuf, uint8 *p_buf, uint32 nbytes);
+    uint32 load_mode_page(cbs_buf_t *p_cbuf, uint8 *p_buf, uint32 nbytes);
 
 
 private:
@@ -72,8 +82,16 @@ private:
 
 /** functions load inquiry pages */
     uint32 _load_stand_inquiry_page(CDevice *p_dev, cbs_buf_t *p_cbuf, uint8 *p_buf, uint32 nbytes);
-    uint32 _load_Firmware(cbs_buf_t *p_cbuf, uint8 *p_buf, uint32 nbytes);
+    uint32 _load_Firmware_page(cbs_buf_t *p_cbuf, uint8 *p_buf, uint32 nbytes);
+    uint32 _load_zero_page(cbs_buf_t *p_cbuf, uint8 *p_buf, uint32 nbytes);
 
+/** functions load mode pages */
+    uint32 load_disconnect_reconnect_page(cbs_buf *p_cbuf, uint8 *p_buf, uint32 n_bytes);
+    uint32 load_format_parameters_page(cbs_buf *p_cbuf, uint8 *p_buf, uint32 n_bytes);
+    uint32 load_disk_geometry_page(cbs_buf *p_cbuf, uint8 *p_buf, uint32 n_bytes);
+    uint32 load_cacheing_parameters_page(cbs_buf *p_cbuf, uint8 *p_buf, uint32 n_bytes);
+    uint32 load_control_page(cbs_buf *p_cbuf, uint8 *p_buf, uint32 n_bytes);
+    uint32 load_info_exceptions_page(cbs_buf *p_cbuf, uint8 *p_buf, uint32 n_bytes);
 };
 
 class CTargetPool
@@ -116,6 +134,7 @@ extern void target_ReplyError(cbs_buf_t *p_cbuf);
 
 /**/
 extern uint32 target_LoadInquiryPage(cbs_buf_t *p_cbuf, uint8 *p_buf, uint32 nbytes);
+extern uint32 target_LoadModePage(cbs_buf_t *p_cbuf, uint8 *p_buf, uint32 nbytes);
 
 extern void target_QueueCbuf(CDevice *p_dev,  cbs_buf_t *p_cbuf);
 extern void target_DeviceScan(CDevice *p_dev);
