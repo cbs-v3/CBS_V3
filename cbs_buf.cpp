@@ -1,5 +1,6 @@
 #include "cbs_buf.h"
 #include "cbs_device.h"
+#include "cbs_target.h"
 
 static CCBufPool g_cbuf_pool;
 cbs_buf_t* cbuf_alloc(uint32 priority)
@@ -23,10 +24,79 @@ cbs_buf_t* get_cbuf_by_handle(uint32 handle)
     return g_cbuf_pool._get_cbuf_by_handle(handle);
 }
 
-void cbuf_done(cbs_buf_t *p_cbuf)
+/*
+ *Function Name:cbuf_Done
+ *
+ *Parameters:
+ *
+ *Description: General function when a cbuf is finished!
+ * 1.Do common things,like stop timer and get the cbuf out of pending queue.
+ * 2.Call the target callback of a cbuf which actually is target_IODone. 
+ * 3.Call init_IODone. 
+ *
+ *Returns:
+ *
+ */
+void cbuf_Done(cbs_buf_t *p_cbuf)
 {
-    CDevice* p_dev = get_device_by_index(p_cbuf->device_no);
+    assert(p_cbuf != NULL);
+
+    /*1. delete timer from device timer queue 
+      *2. delete cbuf from device queue. 
+      */
+    device_CmdDone(p_cbuf);
+
+    /* cbuf should not be in any queue. */
+    assert(p_cbuf->links.flag == QUEUE_FREE_ELEMENT);
+
+    target_CmdDone(p_cbuf);
+
     return;
+}
+
+/* 
+ *Function Name:cbuf_ScsiCdb 
+ *  
+ * Parameters:
+ *
+ * @param op scsi opreation code.
+ * @param block_address block address.
+ * @param xfer_blocks transfer length.
+ * @param p_cdb pointer to the data which will hold cdb when return.   
+ * 
+ * Returns: 
+ */
+void cbuf_ScsiCdb(uint8 op, uint32 block_address, uint32 xfer_blocks, uint8 *p_cdb)
+{
+
+    p_cdb[0] = op;
+
+    p_cdb[1] = 0x00;
+    p_cdb[5] = (uint8)(block_address & 0x000000ff);
+    p_cdb[4] = (uint8)((block_address & 0x0000ff00) >> 8);
+    p_cdb[3] = (uint8)((block_address & 0x00ff0000) >> 16);
+    p_cdb[2] = (uint8)((block_address & 0xff000000) >> 24);
+    p_cdb[6] = 0;
+    p_cdb[7] = (uint8)((xfer_blocks & 0xff00) >> 8);
+    p_cdb[8] = (uint8)(xfer_blocks & 0x00ff);
+    p_cdb[9] = 0;
+    p_cdb[10] = 0;
+    p_cdb[11] = 0;
+    p_cdb[12] = 0;
+    p_cdb[13] = 0;
+    p_cdb[14] = 0;
+    p_cdb[15] = 0;
+}
+
+void cbuf_ScsiCdb6(uint8 op, uint32 block_address, uint32 xfer_blocks, uint8 *p_cdb)
+{
+
+    p_cdb[0] = op;
+
+    p_cdb[3] = (uint8)(block_address & 0x000000ff);
+    p_cdb[2] = (uint8)((block_address & 0x0000ff00) >> 8);
+    p_cdb[1] = (uint8)((block_address & 0x001f0000) >> 16);
+    p_cdb[4] = (uint8)(xfer_blocks & 0x00ff);
 }
 
 void CCBufPool::init_cbuf(cbs_buf_t *p_cbuf)

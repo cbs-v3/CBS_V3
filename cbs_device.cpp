@@ -27,6 +27,15 @@ bool device_IsAllocted(CDevice *p_dev)
     return true;
 }
 
+void device_CmdDone(cbs_buf_t *p_cbuf)
+{
+    CDevice *p_dev;
+    p_dev = get_device_by_index(p_cbuf->device_no);
+
+    p_dev->cmd_done(p_cbuf);
+    return;
+}
+
 /*-----------------class device------------------*/
 void CDevice::cmd_done(cbs_buf_t *p_cbuf)
 {
@@ -60,7 +69,7 @@ void CDevice::cmd_done(cbs_buf_t *p_cbuf)
     return;
 }
 
-CDevicePool::CDevicePool() 
+CDevicePool::CDevicePool()
 {
     _uninit_dev = new CDevice(TARGET_CLASS_UNINIT,  CBS_MAX_UNINIT_DEVICES, 0, "Uninit Device");
     for (int i = 0; i < CBS_MAX_DEVICES; i++)

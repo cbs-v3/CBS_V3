@@ -118,5 +118,6 @@ public:
 
 extern CDevice* get_device_by_index(uint32 index);
 extern bool device_IsAllocted(CDevice *p_dev);
+extern void device_CmdDone(cbs_buf_t *p_cbuf);
 
 #endif

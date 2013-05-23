@@ -14,6 +14,8 @@
 
 #include "cbs_debug.h"
 #include "cbs_initiator.h"
+#include "cbs_device.h"
+#include "cbs_target.h"
 
 static CInitiatorPool g_initiator_pool;
 
@@ -80,6 +82,7 @@ cbs_buf_t* CInitiator::io_alloc(uint32 priority)
 {
     return cbuf_alloc(priority);
 }
+
 void CInitiator::io_free(cbs_buf_t *p_cbuf)
 {
     cbuf_free(p_cbuf);
@@ -130,6 +133,10 @@ void CInitiator::process_request(u32_64 current_req/*pointer of the request that
     return;
 }
 
+void CInitiator::req2cbuf(cbs_buf_t *p_cbuf, u32_64 current_req)
+{
+        LOG_DEBUG(CBS_DEBUG_LEVEL, CBS_DEBUG_INITIATOR, "req2cbuf in initiator basic class");
+}
 /*-------------------------class CInitiatorPool-------------------------------*/
 CInitiator* CInitiatorPool::get_init_by_index(uint32 index)
 {

@@ -1,6 +1,7 @@
 #include <assert.h>
-#include "cbs_target.h"
 #include "cbs_scsi.h"
+#include "cbs_target.h"
+#include "cbs_initiator.h"
 
 /**
  * Sense Context Table. Sense codes are SCSI error codes and a sense
@@ -134,7 +135,7 @@ typedef struct scsi_mode_page2 {
  * Format Parameters Mode Page
  */
 
-typedef struct scsi_mode_page3{
+typedef struct scsi_mode_page3 {
     uint8 page;                 /* 0x83 */
     uint8 len;                  /* 0x16 */
     uint16 tracks_per_zone;     /* 0x0015 */
@@ -155,7 +156,7 @@ typedef struct scsi_mode_page3{
 /**
  * Disk Geometry Mode page
  */
-typedef struct scsi_mode_page4{
+typedef struct scsi_mode_page4 {
     uint8 page;                 /* 0x84 */
     uint8 len;                  /* 0x16 */
     uint8 num_cylinders_msb;    /* 0x00 */
@@ -184,7 +185,7 @@ typedef struct scsi_mode_page4{
 /**
  * Caching Parameters Page
  */
-typedef struct scsi_mode_page8{
+typedef struct scsi_mode_page8 {
     uint8 page;                 /* 0x84 */
     uint8 len;                  /* 0x12 */
     uint8 bits;                 /* 0x14 */
@@ -205,7 +206,7 @@ typedef struct scsi_mode_page8{
 /**
  * Mode Sense/Select Control Page
  */
-typedef struct scsi_mode_pageA{
+typedef struct scsi_mode_pageA {
     uint8 page;                 /* 0x8a */
     uint8 len;                  /* 0x0a */
     uint8 bits;                 /* 0x02 */
@@ -220,7 +221,7 @@ typedef struct scsi_mode_pageA{
 /**
  * Informational Exceptions Page
  */
-typedef struct scsi_mode_page1C{
+typedef struct scsi_mode_page1C {
     uint8 page;                 /* 0x9c */
     uint8 len;                  /* 0x0a */
     uint8 bits;                 /* 0x00 */
@@ -298,7 +299,29 @@ void target_DeviceScan(CDevice *p_dev)
     p_target->device_scan(p_dev);
 }
 
+void target_CmdDone(cbs_buf_t *p_cbuf)
+{
+    get_target_by_device_no(p_cbuf->device_no)->target_cmd_done(p_cbuf);
+    return;
+}
 
+void target_XferDone(cbs_buf_t *p_cbuf)
+{
+    get_target_by_device_no(p_cbuf->device_no)->target_xfer_done(p_cbuf);
+    return;
+}
+
+void target_SendData(cbs_buf_t *p_cbuf, uint8* p_data, uint32 size)
+{
+    get_target_by_device_no(p_cbuf->device_no)->target_send_data(p_cbuf, p_data, size);
+    return;
+}
+
+void target_ReceiveData(cbs_buf_t *p_cbuf, uint8* p_data, uint32 size)
+{
+    get_target_by_device_no(p_cbuf->device_no)->target_receive_data(p_cbuf, p_data, size);
+    return;
+}
 /*-----------------------------------------class target-------------------------------------------------------------------*/
 void CTarget::translate_sense_ctx(uint32 sense_ctx, scsi_sense_info_t *p_sense_info)
 {
@@ -775,11 +798,12 @@ uint32 CTarget::load_format_parameters_page(cbs_buf *p_cbuf, uint8 *p_buf, uint3
 
     p_mode = &local_page;
 
-    rtu_MemZero((uint8*)&local_page, sizeof(scsi_mode_page3_t));
+    rtu_MemZero((uint8 *)&local_page, sizeof(scsi_mode_page3_t));
 
     p_mode->page = 0x03;
     p_mode->len = 0x16;
-    if((p_cdb[2] & 0xc0) != 0x40){
+    if ((p_cdb[2] & 0xc0) != 0x40)
+    {
         p_mode->tracks_per_zone = 0x0015;
         p_mode->alt_sect_per_zone = 0x0009;
         p_mode->alt_trks_per_zone = 0x0000;
@@ -794,9 +818,9 @@ uint32 CTarget::load_format_parameters_page(cbs_buf *p_cbuf, uint8 *p_buf, uint3
         p_mode->reserved2 = 0x0;
         p_mode->reserved3 = 0x0;
     }
-    
+
     copy_size = MIN(n_bytes, sizeof(scsi_mode_page3_t));
-    rtu_MemCopy(p_buf, (uint8*)&local_page, sizeof(scsi_mode_page3_t));
+    rtu_MemCopy(p_buf, (uint8 *)&local_page, sizeof(scsi_mode_page3_t));
 
     return copy_size;
 }
@@ -812,11 +836,12 @@ uint32 CTarget::load_disk_geometry_page(cbs_buf *p_cbuf, uint8 *p_buf, uint32 n_
 
     p_mode = &local_page;
 
-    rtu_MemZero((uint8*)&local_page, sizeof(scsi_mode_page4_t));
+    rtu_MemZero((uint8 *)&local_page, sizeof(scsi_mode_page4_t));
 
     p_mode->page = 0x04;
     p_mode->len = 0x16;
-    if((p_cdb[2] & 0xc0) != 0x40){
+    if ((p_cdb[2] & 0xc0) != 0x40)
+    {
         p_mode->page = 0x84;
         p_mode->len = 0x16;
         p_mode->num_cylinders_msb = 0x00;
@@ -841,9 +866,9 @@ uint32 CTarget::load_disk_geometry_page(cbs_buf *p_cbuf, uint8 *p_buf, uint32 n_
         p_mode->reserved2 = 0x0;
         p_mode->reserved3 = 0x0;
     }
-    
+
     copy_size = MIN(n_bytes, sizeof(scsi_mode_page4_t));
-    rtu_MemCopy(p_buf, (uint8*)&local_page, sizeof(scsi_mode_page4_t));
+    rtu_MemCopy(p_buf, (uint8 *)&local_page, sizeof(scsi_mode_page4_t));
 
     return copy_size;
 }
@@ -859,11 +884,12 @@ uint32 CTarget::load_cacheing_parameters_page(cbs_buf *p_cbuf, uint8 *p_buf, uin
 
     p_mode = &local_page;
 
-    rtu_MemZero((uint8*)&local_page, sizeof(scsi_mode_page8_t));
+    rtu_MemZero((uint8 *)&local_page, sizeof(scsi_mode_page8_t));
 
     p_mode->page = 0x08;
     p_mode->len = 0x12;
-    if((p_cdb[2] & 0xc0) != 0x40){
+    if ((p_cdb[2] & 0xc0) != 0x40)
+    {
         p_mode->bits = 0x14;
         p_mode->retention_prio = 0x00;
         p_mode->dis_pref_xfer_len = 0xffff;
@@ -878,9 +904,9 @@ uint32 CTarget::load_cacheing_parameters_page(cbs_buf *p_cbuf, uint8 *p_buf, uin
         p_mode->non_cache_seg1 = 0x00;
         p_mode->non_cache_seg2 = 0x00;
     }
-    
+
     copy_size = MIN(n_bytes, sizeof(scsi_mode_page8_t));
-    rtu_MemCopy(p_buf, (uint8*)&local_page, sizeof(scsi_mode_page8_t));
+    rtu_MemCopy(p_buf, (uint8 *)&local_page, sizeof(scsi_mode_page8_t));
 
     return copy_size;
 }
@@ -891,7 +917,7 @@ uint32 CTarget::load_cacheing_parameters_page(cbs_buf *p_cbuf, uint8 *p_buf, uin
 uint32 CTarget::load_control_page(cbs_buf *p_cbuf, uint8 *p_buf, uint32 n_bytes)
 {
     uint32 copy_size;
-    scsi_mode_pageA_t* p_mode;
+    scsi_mode_pageA_t *p_mode;
     scsi_mode_pageA_t local_page;
     uint8 *p_cdb;
 
@@ -899,11 +925,12 @@ uint32 CTarget::load_control_page(cbs_buf *p_cbuf, uint8 *p_buf, uint32 n_bytes)
 
     p_mode = &local_page;
 
-    rtu_MemZero((uint8*)&local_page, sizeof(scsi_mode_pageA_t));
+    rtu_MemZero((uint8 *)&local_page, sizeof(scsi_mode_pageA_t));
 
     p_mode->page = 0x0a;
     p_mode->len = 0x0a;
-    if((p_cdb[2] & 0xc0) != 0x40){
+    if ((p_cdb[2] & 0xc0) != 0x40)
+    {
         p_mode->page = 0x0a;
         p_mode->len = 0x0a;
         p_mode->bits = 0x02;
@@ -914,9 +941,9 @@ uint32 CTarget::load_control_page(cbs_buf *p_cbuf, uint8 *p_buf, uint32 n_bytes)
         p_mode->busy_timeout = 0x0000;
         p_mode->st_completion_time = 0x00;
     }
-    
+
     copy_size = MIN(n_bytes, sizeof(scsi_mode_pageA_t));
-    rtu_MemCopy(p_buf, (uint8*)&local_page, sizeof(scsi_mode_pageA_t));
+    rtu_MemCopy(p_buf, (uint8 *)&local_page, sizeof(scsi_mode_pageA_t));
 
     return copy_size;
 }
@@ -932,11 +959,12 @@ uint32 CTarget::load_info_exceptions_page(cbs_buf *p_cbuf, uint8 *p_buf, uint32 
 
     p_mode = &local_page;
 
-    rtu_MemZero((uint8*)&local_page, sizeof(scsi_mode_page1C));
+    rtu_MemZero((uint8 *)&local_page, sizeof(scsi_mode_page1C));
 
     p_mode->page = 0x1c;
     p_mode->len = 0x0a;
-    if((p_cdb[2] & 0xc0) != 0x40){
+    if ((p_cdb[2] & 0xc0) != 0x40)
+    {
         p_mode->bits = 0x00;
         p_mode->mrie = 0x00;
         p_mode->interval_timer = 0x00000000;
@@ -944,7 +972,7 @@ uint32 CTarget::load_info_exceptions_page(cbs_buf *p_cbuf, uint8 *p_buf, uint32 
     }
 
     copy_size = MIN(n_bytes, sizeof(scsi_mode_page1C_t));
-    rtu_MemCopy(p_buf, (uint8*)&local_page, sizeof(scsi_mode_page1C_t));
+    rtu_MemCopy(p_buf, (uint8 *)&local_page, sizeof(scsi_mode_page1C_t));
 
     return copy_size;
 }
@@ -996,7 +1024,113 @@ void CTarget::cmd_done(cbs_buf_t *p_cbuf)
 
 void CTarget::receive_data(cbs_buf_t *p_cbuf, uint8 *p_data, uint32 size)
 {
-    LOG_DEBUG(CBS_DEBUG_LEVEL, CBS_DEBUG_TARGET, "receive_data in basic class, do nothing");
+    LOG_DEBUG(CBS_DEBUG_LEVEL, CBS_DEBUG_TARGET, "receive_data in basic class");
+    switch (p_cbuf->target.gen.xfer_state)
+    {
+    case CBUF_TARGET_XFER_NULL:
+        p_cbuf->target.gen.xfer_state = CBUF_TARGET_XFER_PENDING;
+        init_IOSend(p_cbuf, p_data, size);
+        break;
+
+    case CBUF_TARGET_XFER_ABORTED:
+        target_XferDone(p_cbuf);
+        break;
+
+    default:
+        assert(false);
+    }
+
+    return;
+}
+
+void CTarget::send_data(cbs_buf_t *p_cbuf, uint8 *p_data, uint32 size)
+{
+    LOG_DEBUG(CBS_DEBUG_LEVEL, CBS_DEBUG_TARGET, "send_data in basic class");
+    switch (p_cbuf->target.gen.xfer_state)
+    {
+    case CBUF_TARGET_XFER_NULL:
+        p_cbuf->target.gen.xfer_state = CBUF_TARGET_XFER_PENDING;
+        init_IOReceive(p_cbuf, p_data, size);
+        break;
+
+    case CBUF_TARGET_XFER_ABORTED:
+        target_XferDone(p_cbuf);
+        break;
+
+    default:
+        assert(false);
+    }
+
+    return;
+}
+
+void CTarget::xfer_done(cbs_buf_t *p_cbuf)
+{
+    LOG_DEBUG(CBS_DEBUG_LEVEL, CBS_DEBUG_TARGET, "xfer_done in basic class");
+    switch (p_cbuf->target.gen.xfer_state)
+    {
+    case CBUF_TARGET_XFER_DONE:
+        target_ReplyGood(p_cbuf);
+        break;
+
+    case CBUF_TARGET_XFER_ABORTED:
+        target_ReplyCmdAborted(p_cbuf);
+        break;
+
+    case CBUF_TARGET_XFER_ERROR:
+        target_ReplyError(p_cbuf);
+        break;
+
+    default:
+        assert(false);
+    }
+
+    return;
+}
+
+void CTarget::target_receive_data(cbs_buf_t *p_cbuf, uint8 *p_data, uint32 size)
+{
+    if ((size == 0) || (p_data == NULL))
+    {
+        assert(false);
+        p_cbuf->target.gen.xfer_state = CBUF_TARGET_XFER_ERROR;
+        target_XferDone(p_cbuf);
+        return;
+    }
+
+    receive_data(p_cbuf, p_data, size);
+
+    return;
+}
+
+void CTarget::target_send_data(cbs_buf_t *p_cbuf, uint8 *p_data, uint32 size)
+{
+    if ((size == 0) || (p_data == NULL))
+    {
+        assert(false);
+        p_cbuf->target.gen.xfer_state = CBUF_TARGET_XFER_ERROR;
+        target_XferDone(p_cbuf);
+        return;
+    }
+
+    send_data(p_cbuf, p_data, size);
+
+    return;
+}
+
+void CTarget::target_xfer_done(cbs_buf_t *p_cbuf)
+{
+    if ((p_cbuf->target.gen.xfer_state != CBUF_TARGET_XFER_ABORTED) &&
+        (p_cbuf->target.gen.xfer_state != CBUF_TARGET_XFER_ERROR))
+    {
+        p_cbuf->target.gen.xfer_state = CBUF_TARGET_XFER_DONE;
+    }
+
+    LOG_DEBUG(CBS_DEBUG_LEVEL, CBS_DEBUG_CBUF, "target_xfer_done, target class:%u", get_target_by_device_no(p_cbuf->device_no)->_class_id);
+
+    xfer_done(p_cbuf);
+
+    return;
 }
 
 void CTarget::target_cmd_done(cbs_buf_t *p_cbuf)
@@ -1020,7 +1154,7 @@ void CTarget::target_cmd_done(cbs_buf_t *p_cbuf)
     p_cbuf->target.generic.args[0] = 0;
 
     /* work on target sid finished, call init_IODone */
-    //   init_IODone(p_cbuf);
+    init_IODone(p_cbuf);
 
     return;
 }
@@ -1046,7 +1180,7 @@ void CTarget::reply_good(cbs_buf_t *p_cbuf)
     p_cbuf->packet.response.status = SCSI_STATUS_GOOD;
     p_cbuf->response = CBUF_RESP_COMPLETE;
 
-    cbuf_done(p_cbuf);
+    cbuf_Done(p_cbuf);
 }
 
 void CTarget::reply_nodevice(cbs_buf_t *p_cbuf)
@@ -1055,7 +1189,7 @@ void CTarget::reply_nodevice(cbs_buf_t *p_cbuf)
     p_cbuf->packet.response.status = SCSI_STATUS_CHECK;
     p_cbuf->response = CBUF_RESP_NO_DEVICE;
 
-    cbuf_done(p_cbuf);
+    cbuf_Done(p_cbuf);
 }
 
 void CTarget::reply_cmd_aborted(cbs_buf_t *p_cbuf)
@@ -1082,7 +1216,7 @@ void CTarget::reply_cmd_aborted(cbs_buf_t *p_cbuf)
      * happened when a command aborted by target. Timeout?Or 
      * explicit abort? or other errors. 
      */
-    cbuf_done(p_cbuf);
+    cbuf_Done(p_cbuf);
 
     return;
 
@@ -1116,20 +1250,20 @@ void CTarget::reply_cmd_with_error(cbs_buf_t *p_cbuf, uint32 sense)
     p_cbuf->response = CBUF_RESP_COMPLETE;
     p_cbuf->residual = p_cbuf->requested_transfer_size;
 
-    cbuf_done(p_cbuf);
+    cbuf_Done(p_cbuf);
 }
 
 void CTarget::reply_complete(cbs_buf_t *p_cbuf)
 {
     p_cbuf->response = CBUF_RESP_COMPLETE;
-    cbuf_done(p_cbuf);
+    cbuf_Done(p_cbuf);
 }
 
 void CTarget::reply_error(cbs_buf_t *p_cbuf)
 {
     p_cbuf->packet.response.status = SCSI_STATUS_CHECK;
     p_cbuf->response = CBUF_RESP_ERROR;
-    cbuf_done(p_cbuf);
+    cbuf_Done(p_cbuf);
 }
 
 /*-----------------------class targetpool------------------------------------------------*/

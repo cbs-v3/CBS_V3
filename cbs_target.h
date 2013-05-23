@@ -49,7 +49,9 @@ public:
     std::map<int, std::map<int, load_mod_func> > _mod_pages;
 
 protected:
+    virtual void send_data(cbs_buf_t *p_cbuf, uint8 *p_data, uint32 size);
     virtual void receive_data(cbs_buf_t *p_cbuf, uint8 *p_data, uint32 size);
+    virtual void xfer_done(cbs_buf_t *p_cbuf);
     virtual void cmd_done(cbs_buf_t *p_cbuf);
 /** load inquiry page */
     virtual uint32 load_stand_inquiry_page(CDevice *p_dev, cbs_buf_t *p_cbuf, uint8 *p_buf, uint32 nbytes);
@@ -60,8 +62,10 @@ public:
     RT_STATUS queue_cbuf(CDevice *p_dev, cbs_buf_t *p_cbuf);
     virtual void device_scan(CDevice *p_dev) = 0;
 
+    void target_send_data(cbs_buf_t *p_cbuf, uint8 *p_data, uint32 size);
     void target_receive_data(cbs_buf_t *p_cbuf, uint8 *p_data, uint32 size);
     void target_cmd_done(cbs_buf_t *p_cbuf);
+    void target_xfer_done(cbs_buf_t *p_cbuf);
     uint32 target_extract_sense_info(scsi_sense_info_t& sense_info, uint32 device_no);
 
     void reply_good(cbs_buf_t *p_cbuf);
@@ -132,11 +136,14 @@ extern void target_ReplyCmdDoneWithError(cbs_buf_t *p_cbuf, uint32 sense);
 extern void target_ReplyComplete(cbs_buf_t *p_cbuf);
 extern void target_ReplyError(cbs_buf_t *p_cbuf);
 
-/**/
 extern uint32 target_LoadInquiryPage(cbs_buf_t *p_cbuf, uint8 *p_buf, uint32 nbytes);
 extern uint32 target_LoadModePage(cbs_buf_t *p_cbuf, uint8 *p_buf, uint32 nbytes);
 
 extern void target_QueueCbuf(CDevice *p_dev,  cbs_buf_t *p_cbuf);
 extern void target_DeviceScan(CDevice *p_dev);
+extern void target_CmdDone(cbs_buf_t *p_cbuf);
+extern void target_XferDone(cbs_buf_t *p_cbuf);
+extern void target_SendData(cbs_buf_t *p_cbuf, uint8* p_data, uint32 size);
+extern void target_ReceiveData(cbs_buf_t *p_cbuf, uint8* p_data, uint32 size);
 
 #endif
