@@ -99,6 +99,11 @@ public:
 
     inline void check_expire()
     {   _q_timer.check_expire(); }
+
+	inline const char* get_name()
+	{
+		return _name.c_str();
+	}
 };
 
 class CDevicePool
@@ -126,6 +131,8 @@ public:
 extern CDevice* get_device_by_index(uint32 index);
 extern bool device_IsAllocted(CDevice *p_dev);
 extern void device_CmdDone(cbs_buf_t *p_cbuf);
-#define cbs_GetDevice(device_no) get_device_by_index(device_no)
+extern CDevice* cbs_GetDevice(device_no);
+extern RT_STATUS cbs_DeviceAlloc(CDevice *p_dev);
+extern bool cbs_IsDeviceAlloced(CDevice *p_dev);
 
 #endif

@@ -21,6 +21,20 @@
 #include "cbs_target.h"
 #include "cbs_device.h"
 
+#define CBS_THREAD_FREE          0x0
+#define CBS_THREAD_SUSPEND       0x1
+#define CBS_THREAD_RUN           0x2
+#define CBS_THREAD_SCHEDULE      0x3
+#define CBS_THREAD_SLEEP         0x4
+#define CBS_THREAD_PENDING_IO    0x5
+#define CBS_THREAD_WAIT_SEM      0x6 
+#define CBS_THREAD_WAIT_MUTEX    0x7 
+#define CBS_THREAD_WAIT_COND     0x8 
+#define CBS_THREAD_WAIT_SIGNAL   0x9
+#define CBS_THREAD_WAIT_BARRIER  0xa
+#define CBS_THREAD_WAIT_MESSAGE  0xb
+
+
 #define CBS_THREAD_CMD_MAX_RETRY 3
 enum cbs_thread_id
 {
@@ -33,18 +47,16 @@ typedef void* (*start_routine)(void *);
 class CThreadDevice : public CDevice
 {
 public:
-    CThreadDevice()
-    { `
-    }
+    CThreadDevice(uint32 thread_id, start_routine p_entry, const char* name, uint32 priority = 0)
+    {}
 public:
-    qu_queue_t _links;
     pthread_t _tid;
     uint32 _thread_id;
     uint32 _cpu_no;
     uint32 _priority;
+	uint32 _state;
 
     u32_64 _args[4];
-    rtu_sem_t _sem;
 
     start_routine _p_entry;
 };
@@ -59,17 +71,14 @@ private:
     std::map<pthread_t, uint32> _map_thread; //map the pthread id with the thread id
 };
 
-class CThreadInitiator : public CInitiator
+class CThreadInitiator:public CInitiator
 {
-
 };
 
-class CThreadTarget : public CTarget
+class CThreadTarget:public CTarget
 {
-public:
-
-
-
 };
+
+extern cbs_GetThread(uint32 thread_id);
 
 #endif

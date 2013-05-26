@@ -22,10 +22,21 @@ CDevice* get_device_by_index(uint32 index)
     return g_device_pool._get_device_by_index(index);
 }
 
+CDevice* cbs_GetDevice(device_no)
+{
+	return g_device_pool._get_device_by_index(index);
+}
+
 bool device_IsAllocted(CDevice *p_dev)
 {
     return true;
 }
+
+bool cbs_IsDeviceAlloced(CDevice *p_dev)
+{
+	return true;
+}
+
 
 void device_CmdDone(cbs_buf_t *p_cbuf)
 {
@@ -34,6 +45,11 @@ void device_CmdDone(cbs_buf_t *p_cbuf)
 
     p_dev->cmd_done(p_cbuf);
     return;
+}
+
+RT_STATUS cbs_DeviceAlloc(CDevice *p_dev)
+{
+	return g_device_pool._device_register(p_dev);
 }
 
 /*-----------------class device------------------*/

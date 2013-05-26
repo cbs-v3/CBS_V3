@@ -81,9 +81,19 @@ typedef struct iscsi_init {
     uint32 args[1];
 }iscsi_init_t;
 
+typedef struct thread_init {
+    common_init common;
+    uint32 thread_id;
+    uint32 instance;
+    uint32 retry_count;
+    uint32 args[2];
+}thread_init_t;
+
+
 typedef union initiator_specific{ 
     common_init_t gen;     /* Generic Initiator*/
     iscsi_init_t iscsi;    /** iSCSI Initiator */
+	thread_init_t thread;  /* thread Initiator*/
 }initiator_specific_t;
 /********************End of Initiator Defination***********/
 
