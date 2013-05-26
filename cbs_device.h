@@ -26,6 +26,13 @@
                         CBS_MAX_THREAD_DEVICES + \
                         CBS_MAX_CONFIG_DEVICES)
 
+#define CBS_UNINIT_DEVICES_SHIFT 0
+#define CBS_DISK_DEVICES_SHIT (CBS_UNINIT_DEVICES_SHIFT + CBS_MAX_UNINIT_DEVICES)
+#define CBS_NULL_DEVICES_SHIFT (CBS_DISK_DEVICES_SHIT + CBS_MAX_DISK_DEVICES)
+#define CBS_TSSD_DEVICES_SHIFT (CBS_NULL_DEVICES_SHIFT + CBS_MAX_NULL_DEVICES)
+#define CBS_TFS_DEVICES_SHIFT (CBS_TSSD_DEVICES_SHIFT + CBS_MAX_TSSD_DEVICES)
+#define CBS_THREAD_DEVICES_SHIFT (CBS_TFS_DEVICES_SHIFT + CBS_MAX_TFS_DEVICES)
+
 #define CBS_DEVICE_FREE                 0x00000000
 #define CBS_DEVICE_STOP                 0x00000001
 #define CBS_DEVICE_GONE                 0x00000002
@@ -119,5 +126,6 @@ public:
 extern CDevice* get_device_by_index(uint32 index);
 extern bool device_IsAllocted(CDevice *p_dev);
 extern void device_CmdDone(cbs_buf_t *p_cbuf);
+#define cbs_GetDevice(device_no) get_device_by_index(device_no)
 
 #endif

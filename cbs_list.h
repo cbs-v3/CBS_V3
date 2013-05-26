@@ -22,7 +22,8 @@
 #define TM_TIME_Q						0x0300
 #define TM_TIME_Q_HEAD					0x8300
 
-
+#define CMEMPOOL_CHUNK_Q            0x0400
+#define CMEMPOOL_CHUNK_Q_HEAD   0x8400
 
 #define DEBUG_QUEUE
 
